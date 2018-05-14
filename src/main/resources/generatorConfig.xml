@@ -8,13 +8,10 @@
         <plugin type="org.mybatis.generator.plugins.CaseInsensitiveLikePlugin" />
         <plugin type="org.mybatis.generator.plugins.SerializablePlugin" />
 
-        <commentGenerator>
-            <property name="suppressDate" value="true" />
-            <property name="suppressAllComments" value="true" />
-        </commentGenerator>
+        <commentGenerator type="config.MyCommentGenerator"></commentGenerator>
 
         <jdbcConnection driverClass="com.mysql.jdbc.Driver"
-            connectionURL="jdbc:mysql://www.likaipeng.top:3306/shiro?useSSL=false&amp;serverTimezone=UTC&amp;characterEncoding=utf8" userId="root"
+            connectionURL="jdbc:mysql://www.likepeng.cn:3306/shiro?useSSL=false&amp;serverTimezone=UTC&amp;characterEncoding=utf8" userId="root"
             password="203204" />
             
         <javaTypeResolver>
@@ -35,16 +32,7 @@
             enableUpdateByExample="false" enableDeleteByExample="false"
             enableSelectByExample="true" selectByExampleQueryId="false">
         </table>
-        <table tableName="test_bank"  schema="MYSCHEMA" domainObjectName="Bank" 
-        	enableCountByExample="false"
-            enableUpdateByExample="false" enableDeleteByExample="false"
-            enableSelectByExample="true" selectByExampleQueryId="false">
-        </table>
-        <table tableName="test_shop"  schema="MYSCHEMA" domainObjectName="Shop"
-			enableCountByExample="false"
-            enableUpdateByExample="false" enableDeleteByExample="false"
-            enableSelectByExample="true" selectByExampleQueryId="false">
-        </table>
+
 
     </context>
 </generatorConfiguration>
