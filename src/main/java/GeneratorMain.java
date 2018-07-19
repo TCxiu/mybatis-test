@@ -9,6 +9,8 @@ import org.mybatis.generator.config.Configuration;
 import org.mybatis.generator.config.xml.ConfigurationParser;
 import org.mybatis.generator.internal.DefaultShellCallback;
 
+
+
 public class GeneratorMain {
 	public static void main(String[] args) {
         shell();

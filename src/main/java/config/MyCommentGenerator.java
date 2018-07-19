@@ -2,9 +2,8 @@ package config;
 
 import static org.mybatis.generator.internal.util.StringUtility.isTrue;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
+
 import org.mybatis.generator.api.CommentGenerator;
 import org.mybatis.generator.api.IntrospectedColumn;
 import org.mybatis.generator.api.IntrospectedTable;
@@ -21,7 +20,6 @@ public class MyCommentGenerator implements CommentGenerator{
     private boolean suppressDate;
     private boolean suppressAllComments;
     private String currentDateStr;
-
     public MyCommentGenerator() {
         super();
         properties = new Properties();
@@ -56,17 +54,14 @@ public class MyCommentGenerator implements CommentGenerator{
 
     @Override
     public void addGeneralMethodAnnotation(Method method, IntrospectedTable introspectedTable, IntrospectedColumn introspectedColumn, Set<FullyQualifiedJavaType> imports) {
-
     }
 
     @Override
     public void addFieldAnnotation(Field field, IntrospectedTable introspectedTable, Set<FullyQualifiedJavaType> imports) {
-
     }
 
     @Override
     public void addFieldAnnotation(Field field, IntrospectedTable introspectedTable, IntrospectedColumn introspectedColumn, Set<FullyQualifiedJavaType> imports) {
-
     }
 
     @Override
@@ -150,33 +145,62 @@ public class MyCommentGenerator implements CommentGenerator{
         if (suppressAllComments) {
             return;
         }
+
+        HashMap<String, String> map = new HashMap<>();
+        map.put("TIMESTAMP","DATETIME");
+        map.put("LONGVARCHAR","text");
+        map.put("INTEGER","int");
+        map.put("DECIMAL","decimal(65,30)");
+        map.put("VARCHAR","varchar(60)");
+        map.put("BIGINT","bigint");
+
+
+        // 成员变量注释
         StringBuilder sb = new StringBuilder();
-        field.addJavaDocLine("/**");
-        sb.append(" * ");
-        sb.append(introspectedColumn.getRemarks());
-        field.addJavaDocLine(sb.toString().replace("\n", " "));
-        field.addJavaDocLine(" */");
+        field.addJavaDocLine("/**\t"+introspectedColumn.getRemarks()+"\t*/");
+
+        // 成员变量注解
+        List<IntrospectedColumn> primaryKeyColumns = introspectedTable.getPrimaryKeyColumns();
+        String primaryKeyName = primaryKeyColumns.get(0).getJavaProperty();
+        String primaryKeyDataType= primaryKeyColumns.get(0).getJdbcTypeName();
+        String primaryKeyRemarks = primaryKeyColumns.get(0).getRemarks();
+
+
+        String javaPropertyName = introspectedColumn.getJavaProperty();
+        String jdbcTypeName = introspectedColumn.getJdbcTypeName();
+        String remarks = introspectedColumn.getRemarks();
+
+
+
+        if (javaPropertyName.equals(primaryKeyName)){
+            field.addAnnotation("@Id");
+            field.addAnnotation("@GeneratedValue(generator = \"idFactory\")");
+            field.addAnnotation("@GenericGenerator(name = \"idFactory\",strategy = \"user.service.api.factory.IdFactory\")");
+            field.addAnnotation("@Column(name = \""+primaryKeyColumns.get(0).getActualColumnName()+"\",columnDefinition = \""+map.get(primaryKeyDataType)+" COMMENT  \'"+primaryKeyRemarks+"\'\")");
+
+            field.addAnnotation("@ApiModelProperty(value = \"主键:"+primaryKeyRemarks+"\",name = \""+primaryKeyName+"\",dataType = \""+primaryKeyDataType+"\")");
+        }
+        else {
+            if ("DECIMAL".equals(jdbcTypeName)){
+                field.addAnnotation("@JsonSerialize(using = BigDecimalJsonSerializer.class)");
+                field.addAnnotation("@JsonDeserialize(using = BigDecimalJsonDeserializer.class)");
+
+            }
+
+            field.addAnnotation("@Column(name = \""+introspectedColumn.getActualColumnName()+"\",columnDefinition = \""+map.get(jdbcTypeName)+" COMMENT  \'"+remarks+"\'\")");
+
+            field.addAnnotation("@ApiModelProperty(value = \"" + remarks + "\",name = \"" + javaPropertyName + "\",dataType = \"" + jdbcTypeName + "\")");
+        }
     }
 
-    public void addFieldComment(Field field, IntrospectedTable introspectedTable) {
-//        if (suppressAllComments) {
-//            return;
-//        }
-//        StringBuilder sb = new StringBuilder();
-//        field.addJavaDocLine("/**");
-//        sb.append("*,");
-//        sb.append(introspectedTable.)
-//        sb.append(introspectedTable.getFullyQualifiedTable());
-//        field.addJavaDocLine(sb.toString().replace(",", "\n"));
-//        field.addJavaDocLine(" */");
-    }
+
 
     @Override
     public void addModelClassComment(TopLevelClass topLevelClass, IntrospectedTable introspectedTable) {
+        // 生成类注释
         if (suppressAllComments) {
             return;
         }
-
         StringBuilder sb = new StringBuilder();
         topLevelClass.addJavaDocLine("/**");
         sb.append(" * @author 创建者: ");
@@ -186,6 +210,15 @@ public class MyCommentGenerator implements CommentGenerator{
         sb.append(currentDateStr);
         topLevelClass.addJavaDocLine(sb.toString().replace("#", "\n"));
         topLevelClass.addJavaDocLine(" */");
+        topLevelClass.addJavaDocLine("\n");
+
+        //  生成API注解
+        String domainObjectName = introspectedTable.getTableConfiguration().getDomainObjectName();
+        topLevelClass.addAnnotation("@Data");
+        topLevelClass.addAnnotation("@Entity");
+        topLevelClass.addAnnotation("@Table(name = \""+introspectedTable.getTableConfiguration().getTableName()+"\")");
+        topLevelClass.addAnnotation("@JsonIgnoreProperties(value = { \"hibernateLazyInitializer\", \"handler\" })");
+        topLevelClass.addAnnotation("@ApiModel(value = \""+domainObjectName+"\""+",description = \""+domainObjectName+"实体类\")");
 
     }
 
@@ -210,41 +243,56 @@ public class MyCommentGenerator implements CommentGenerator{
 
     public void addGetterComment(Method method, IntrospectedTable introspectedTable,
                                  IntrospectedColumn introspectedColumn) {
-        if (suppressAllComments) {
-            return;
-        }
-        method.addJavaDocLine("/**");
-        StringBuilder sb = new StringBuilder();
-        sb.append(" * ");
-        sb.append(introspectedColumn.getRemarks());
-        method.addJavaDocLine(sb.toString().replace("\n", " "));
-        sb.setLength(0);
-        sb.append(" * @return ");
-        sb.append(introspectedColumn.getActualColumnName());
-        sb.append(" ");
-        sb.append(introspectedColumn.getRemarks());
-        method.addJavaDocLine(sb.toString().replace("\n", " "));
-        method.addJavaDocLine(" */");
+//        if (suppressAllComments) {
+//            return;
+//        }
+//        method.addJavaDocLine("/**");
+//        StringBuilder sb = new StringBuilder();
+//        sb.append(" * ");
+//        sb.append(introspectedColumn.getRemarks());
+//        method.addJavaDocLine(sb.toString().replace("\n", " "));
+//        sb.setLength(0);
+//        sb.append(" * @return ");
+//        sb.append(introspectedColumn.getActualColumnName());
+//        sb.append(" ");
+//        sb.append(introspectedColumn.getRemarks());
+//        method.addJavaDocLine(sb.toString().replace("\n", " "));
+//        method.addJavaDocLine(" */");
+    }
+
+
+
+    public void addFieldComment(Field field, IntrospectedTable introspectedTable) {
+//        if (suppressAllComments) {
+//            return;
+//        }
+//        StringBuilder sb = new StringBuilder();
+//        field.addJavaDocLine("/**");
+//        sb.append("*,");
+//        sb.append(introspectedTable.)
+//        sb.append(introspectedTable.getFullyQualifiedTable());
+//        field.addJavaDocLine(sb.toString().replace(",", "\n"));
+//        field.addJavaDocLine(" */");
     }
 
     public void addSetterComment(Method method, IntrospectedTable introspectedTable,
                                  IntrospectedColumn introspectedColumn) {
-        if (suppressAllComments) {
-            return;
-        }
-        method.addJavaDocLine("/**");
-        StringBuilder sb = new StringBuilder();
-        sb.append(" * ");
-        sb.append(introspectedColumn.getRemarks());
-        method.addJavaDocLine(sb.toString().replace("\n", " "));
-        Parameter parm = method.getParameters().get(0);
-        sb.setLength(0);
-        sb.append(" * @param ");
-        sb.append(parm.getName());
-        sb.append(" ");
-        sb.append(introspectedColumn.getRemarks());
-        method.addJavaDocLine(sb.toString().replace("\n", " "));
-        method.addJavaDocLine(" */");
+//        if (suppressAllComments) {
+//            return;
+//        }
+//        method.addJavaDocLine("/**");
+//        StringBuilder sb = new StringBuilder();
+//        sb.append(" * ");
+//        sb.append(introspectedColumn.getRemarks());
+//        method.addJavaDocLine(sb.toString().replace("\n", " "));
+//        Parameter parm = method.getParameters().get(0);
+//        sb.setLength(0);
+//        sb.append(" * @param ");
+//        sb.append(parm.getName());
+//        sb.append(" ");
+//        sb.append(introspectedColumn.getRemarks());
+//        method.addJavaDocLine(sb.toString().replace("\n", " "));
+//        method.addJavaDocLine(" */");
     }
 
     public void addClassComment(InnerClass innerClass, IntrospectedTable introspectedTable, boolean markAsDoNotDelete) {

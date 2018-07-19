@@ -11,28 +11,23 @@
         <commentGenerator type="config.MyCommentGenerator"></commentGenerator>
 
         <jdbcConnection driverClass="com.mysql.jdbc.Driver"
-            connectionURL="jdbc:mysql://www.likepeng.cn:3306/shiro?useSSL=false&amp;serverTimezone=UTC&amp;characterEncoding=utf8" userId="root"
-            password="203204" />
+            connectionURL="jdbc:mysql://192.168.0.189:3306/test?useSSL=false&amp;serverTimezone=UTC&amp;characterEncoding=utf8" userId="root"
+            password="Dyd_2018" />
             
         <javaTypeResolver>
             <property name="forceBigDecimals" value="true" />
         </javaTypeResolver>
 
-        <javaModelGenerator targetPackage="com.xiu.test.api.model"
+        <javaModelGenerator targetPackage="com.xiu.jpa.demo.model"
             targetProject="src/main/java">
             <!-- 是否针对string类型的字段在set的时候进行trim调用 -->
             <property name="trimStrings" value="true" />
         </javaModelGenerator>
-        <sqlMapGenerator targetPackage="mappers" targetProject="src/main/java" />
-        <javaClientGenerator targetPackage="com.xiu.test.api.mapper"
-            targetProject="src/main/java" type="ANNOTATEDMAPPER" />
 
-        <table tableName="test_user"  schema="MYSCHEMA" domainObjectName="User"  
+        <table tableName="test"  schema="MYSCHEMA" domainObjectName="Test"
         	enableCountByExample="false"
             enableUpdateByExample="false" enableDeleteByExample="false"
-            enableSelectByExample="true" selectByExampleQueryId="false">
+            enableSelectByExample="false" selectByExampleQueryId="false">
         </table>
-
-
     </context>
 </generatorConfiguration>
